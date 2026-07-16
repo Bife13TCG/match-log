@@ -1,5 +1,5 @@
 /* Match Log service worker — cache-first app shell */
-const CACHE = 'matchlog-v3';
+const CACHE = 'matchlog-v4';
 const SHELL = [
   './',
   './index.html',

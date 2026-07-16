@@ -223,7 +223,12 @@ function recStr(t) { return `${t.w}–${t.l}` + (t.d ? `–${t.d}` : ''); }
 /* ---------- Router ---------- */
 const views = ['view-home', 'view-stats', 'view-deck', 'view-report'];
 function show(id) {
-  for (const v of views) $(v).hidden = v !== id;
+  for (const v of views) {
+    const el = $(v);
+    const active = v === id;
+    el.hidden = !active;
+    el.style.display = active ? 'flex' : 'none'; // belt and suspenders vs stale CSS
+  }
   window.scrollTo(0, 0);
 }
 
