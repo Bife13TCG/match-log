@@ -11,8 +11,15 @@
   <link rel="apple-touch-icon" href="icons/icon-192.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=IBM+Plex+Mono:wght@500;600&family=Nunito:wght@700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
+  <script>
+    // Apply saved theme before first paint
+    try {
+      var t = localStorage.getItem('matchlog.theme');
+      if (t && t !== 'ships-log') document.documentElement.dataset.theme = t;
+    } catch (e) {}
+  </script>
 </head>
 <body>
 
@@ -21,11 +28,25 @@
     <div class="home-hero">
       <h1 class="home-title">MATCH LOG</h1>
       <p class="home-sub">Choose a deck to view or create reports.</p>
-      <button type="button" class="btn pill" id="allStatsBtn">📊 All deck stats</button>
+      <div class="deck-actions">
+        <button type="button" class="btn pill" id="allStatsBtn">📊 All deck stats</button>
+        <button type="button" class="btn pill" id="themeBtn">🎨 Theme</button>
+      </div>
     </div>
     <div class="divider-label"><span>Your decks</span></div>
     <div class="deck-grid" id="deckGrid"></div>
   </main>
+
+  <!-- ============ Theme picker ============ -->
+  <dialog id="themeDialog" class="match-dialog small-dialog">
+    <form method="dialog">
+      <div class="dialog-head">
+        <h2 class="dialog-title">Theme</h2>
+        <button type="button" class="dialog-close" data-close="themeDialog" aria-label="Close">×</button>
+      </div>
+      <div class="theme-grid" id="themeGrid"></div>
+    </form>
+  </dialog>
 
   <!-- ============ ALL STATS ============ -->
   <main id="view-stats" class="view" hidden>

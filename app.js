@@ -1069,6 +1069,49 @@ function note(msg) {
   note._t = setTimeout(() => { el.textContent = ''; }, 6000);
 }
 
+/* ---------- Themes ---------- */
+const THEMES = [
+  { id: 'ships-log', name: "Ship's Log", sw: ['#10141f', '#1a2336', '#c9a227', '#5f9e85'] },
+  { id: 'nightfall', name: 'Nightfall', sw: ['#0b0b12', '#14141d', '#8b5cf6', '#55c789'] },
+  { id: 'soul-king', name: 'Soul King', sw: ['#0c0b09', '#16140e', '#d4af37', '#57a06f'] },
+  { id: 'sunny', name: 'Thousand Sunny', sw: ['#f4eddd', '#fdf8ec', '#c96f1e', '#2e8b57'] },
+  { id: 'emperor', name: 'Emperor', sw: ['#120c0e', '#1d1317', '#d64545', '#5aa878'] }
+];
+
+function currentTheme() {
+  try { return localStorage.getItem('matchlog.theme') || 'ships-log'; } catch { return 'ships-log'; }
+}
+
+function applyTheme(id) {
+  if (id === 'ships-log') delete document.documentElement.dataset.theme;
+  else document.documentElement.dataset.theme = id;
+  try { localStorage.setItem('matchlog.theme', id); } catch {}
+  // Keep the phone status bar in sync with the background
+  const t = THEMES.find((x) => x.id === id) || THEMES[0];
+  document.querySelector('meta[name="theme-color"]').setAttribute('content', t.sw[0]);
+  renderThemeGrid();
+}
+
+function renderThemeGrid() {
+  const cur = currentTheme();
+  $('themeGrid').innerHTML = THEMES.map((t) =>
+    `<button type="button" class="theme-opt ${t.id === cur ? 'active' : ''}" data-theme-id="${t.id}">
+       <span class="theme-swatches">${t.sw.map((c) => `<span class="theme-swatch" style="background:${c}"></span>`).join('')}</span>
+       <span class="theme-name">${esc(t.name)}</span>
+       ${t.id === cur ? '<span class="mono" style="color:var(--brass);font-size:0.75rem">active</span>' : ''}
+     </button>`).join('');
+}
+
+$('themeBtn').addEventListener('click', () => {
+  renderThemeGrid();
+  $('themeDialog').showModal();
+});
+$('themeGrid').addEventListener('click', (e) => {
+  const opt = e.target.closest('[data-theme-id]');
+  if (opt) applyTheme(opt.dataset.themeId);
+});
+applyTheme(currentTheme());
+
 /* ---------- Boot ---------- */
 route();
 
