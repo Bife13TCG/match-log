@@ -39,6 +39,7 @@ body {
   flex-direction: column;
   gap: 14px;
 }
+.view[hidden] { display: none !important; }
 
 .view-header {
   display: flex;
