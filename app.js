@@ -180,8 +180,8 @@ function allUnits() {
     });
   }
   for (const r of db.reports) {
-    const bo = r.bestOf === 1 ? 1 : 3;
     for (const rd of r.rounds || []) {
+      const bo = roundBo(rd, r);
       const games = (rd.games || []).slice(0, bo).filter((g) => g && g.result);
       let result = null;
       if (rd.outcome === 'bye') result = 'win';
@@ -526,9 +526,9 @@ function renderDeck() {
 }
 
 function reportRecord(r) {
-  const bo = r.bestOf === 1 ? 1 : 3;
   let w = 0, l = 0, dr = 0;
   for (const rd of r.rounds || []) {
+    const bo = roundBo(rd, r);
     const games = (rd.games || []).slice(0, bo).filter((g) => g && g.result);
     if (rd.outcome === 'bye') { w++; continue; }
     if (rd.outcome === 'id') { dr++; continue; }
@@ -669,13 +669,14 @@ $('newReportBtn').addEventListener('click', () => {
   location.hash = '#/report/' + r.id;
 });
 
-function newRound() {
+function newRound(bestOf = 3) {
   return {
     id: uid(), createdAt: Date.now(),
     opp: '', oppLeaderId: null,
     dice: null,            // 'won' | 'lost' | null
     outcome: 'play',       // 'play' | 'id' | 'bye'
     topCut: false,
+    bestOf,                // 1 | 3, per round (Bo1 swiss + Bo3 top cut is a thing)
     games: [null, null, null],  // each: {result, order, mull, hand, cause, keySeen, keyName, turningPoint}
     note: ''
   };
@@ -726,26 +727,14 @@ function renderReport() {
   $('rPlayers').value = r.players ?? '';
   $('rPlacement').value = r.placement || '';
   $('rFormat').value = r.format || '';
-  syncBestOf(r);
   renderRounds();
 }
 
-function syncBestOf(r) {
-  const bo = r.bestOf === 1 ? 1 : 3;
-  $('rBestOf').querySelectorAll('button').forEach((b) =>
-    b.classList.toggle('on', Number(b.dataset.v) === bo));
+/* Per-round best-of: round's own setting, falling back to a legacy report-level one, then Bo3 */
+function roundBo(rd, r) {
+  const bo = rd.bestOf ?? r.bestOf ?? 3;
+  return bo === 1 ? 1 : 3;
 }
-
-$('rBestOf').addEventListener('click', (e) => {
-  const b = e.target.closest('button');
-  if (!b) return;
-  const r = report();
-  if (!r) return;
-  r.bestOf = Number(b.dataset.v);
-  save();
-  syncBestOf(r);
-  renderRounds();
-});
 
 function renderRounds() {
   const r = report();
@@ -755,10 +744,10 @@ function renderRounds() {
   r.rounds.forEach((rd, idx) => wrap.appendChild(roundCard(rd, idx)));
 }
 
-function roundResultChip(rd) {
+function roundResultChip(rd, bo = 3) {
   if (rd.outcome === 'bye') return `<span class="round-result-chip w">BYE</span>`;
   if (rd.outcome === 'id') return `<span class="round-result-chip d">ID</span>`;
-  const games = (rd.games || []).filter((g) => g && g.result);
+  const games = (rd.games || []).slice(0, bo).filter((g) => g && g.result);
   if (!games.length) return `<span class="round-result-chip">–</span>`;
   const w = games.filter((g) => g.result === 'W').length;
   const l = games.filter((g) => g.result === 'L').length;
@@ -775,13 +764,17 @@ function roundCard(rd, idx) {
   const el = document.createElement('section');
   el.className = 'round-card';
   const isPlay = rd.outcome === 'play' || !rd.outcome;
-  const bo = report().bestOf === 1 ? 1 : 3;
+  const bo = roundBo(rd, report());
   const gameIdxs = bo === 1 ? [0] : [0, 1, 2];
 
   el.innerHTML = `
     <div class="round-head">
       <h2 class="round-title">Round ${idx + 1}</h2>
-      ${roundResultChip(rd)}
+      ${roundResultChip(rd, bo)}
+      <div class="mini-seg" data-r="bo">
+        <button type="button" data-v="1" class="${bo === 1 ? 'on' : ''}">Bo1</button>
+        <button type="button" data-v="3" class="${bo === 3 ? 'on' : ''}">Bo3</button>
+      </div>
       <button type="button" class="chip-toggle ${rd.topCut ? 'active' : ''}" data-r="topcut">Top Cut</button>
       <button type="button" class="icon-btn" data-r="del" title="Delete round">🗑</button>
     </div>
@@ -830,7 +823,12 @@ function roundCard(rd, idx) {
     save();
   });
 
-  // Dice + outcome + topcut + delete
+  // Dice + outcome + topcut + best-of + delete
+  el.querySelector('[data-r="bo"]').addEventListener('click', (e) => {
+    const b = e.target.closest('button'); if (!b) return;
+    rd.bestOf = Number(b.dataset.v);
+    save(); renderRounds();
+  });
   el.querySelector('[data-r="dice"]').addEventListener('click', (e) => {
     const b = e.target.closest('button'); if (!b) return;
     rd.dice = rd.dice === b.dataset.v ? null : b.dataset.v;
@@ -993,7 +991,8 @@ function gameRow(rd, gi) {
 
 $('addRoundBtn').addEventListener('click', () => {
   const r = report();
-  r.rounds.push(newRound());
+  const last = r.rounds[r.rounds.length - 1];
+  r.rounds.push(newRound(last ? roundBo(last, r) : 3));
   save();
   renderRounds();
   window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
