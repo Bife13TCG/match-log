@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Match Log</title>
+  <meta name="description" content="Private TCG match tracker & loss review tool" />
+  <meta name="theme-color" content="#10141f" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="icons/icon-192.png" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="app-header">
+    <h1 class="app-title">Match Log</h1>
+    <span class="logged-count" id="loggedCount" title="Matches logged"></span>
+  </header>
+
+  <main id="dashboard">
+    <!-- Summary cards -->
+    <section class="summary-grid" aria-label="Summary">
+      <div class="card">
+        <span class="card-label">Win rate</span>
+        <span class="card-value mono" id="winRate">–</span>
+        <span class="card-sub mono" id="record"></span>
+      </div>
+      <div class="card">
+        <span class="card-label">Streak</span>
+        <span class="card-value mono" id="streak">–</span>
+        <span class="card-sub" id="streakSub"></span>
+      </div>
+      <div class="card">
+        <span class="card-label">Key card seen</span>
+        <span class="card-value mono" id="keyRate">–</span>
+        <span class="card-sub mono" id="keyRateSub"></span>
+      </div>
+    </section>
+
+    <!-- Last 10 vs all-time -->
+    <section class="compare-strip" id="compareStrip" hidden aria-label="Recent form">
+      <span class="compare-item">Last 10: <strong class="mono" id="last10"></strong></span>
+      <span class="compare-divider"></span>
+      <span class="compare-item">All-time: <strong class="mono" id="allTime"></strong></span>
+      <span class="compare-trend" id="trend"></span>
+    </section>
+
+    <!-- Matchup breakdown -->
+    <section class="panel" aria-label="Matchups">
+      <h2 class="panel-title">Matchups</h2>
+      <div class="table-wrap">
+        <table class="matchup-table">
+          <thead>
+            <tr><th>Opponent</th><th class="num">Games</th><th class="num">W–L</th><th class="num">Win %</th></tr>
+          </thead>
+          <tbody id="matchupRows"></tbody>
+        </table>
+      </div>
+      <p class="empty-hint" id="matchupEmpty" hidden>No matches yet. Log your first one below.</p>
+    </section>
+
+    <!-- Root cause breakdown -->
+    <section class="panel" aria-label="Root causes">
+      <div class="panel-head">
+        <h2 class="panel-title">Why games turned</h2>
+        <div class="toggle" role="group" aria-label="Scope">
+          <button type="button" id="scopeLosses" class="toggle-btn active">Losses</button>
+          <button type="button" id="scopeAll" class="toggle-btn">All games</button>
+        </div>
+      </div>
+      <div id="causeBars" class="cause-bars"></div>
+      <p class="empty-hint" id="causeEmpty" hidden>Nothing here yet.</p>
+    </section>
+
+    <!-- Match log list -->
+    <section class="panel" aria-label="Match log">
+      <div class="panel-head">
+        <h2 class="panel-title">Log</h2>
+        <div class="filters">
+          <select id="filterOpponent" aria-label="Filter by opponent"></select>
+          <select id="filterCause" aria-label="Filter by root cause"></select>
+        </div>
+      </div>
+      <ul id="matchList" class="match-list"></ul>
+      <p class="empty-hint" id="listEmpty" hidden>No matches match this filter.</p>
+    </section>
+
+    <!-- Backup / data management -->
+    <section class="panel" aria-label="Backup">
+      <h2 class="panel-title">Backup</h2>
+      <div class="backup-actions">
+        <button type="button" class="btn" id="exportBtn">Export backup</button>
+        <button type="button" class="btn" id="importBtn">Import backup</button>
+        <input type="file" id="importFile" accept="application/json" hidden />
+        <button type="button" class="btn danger" id="clearBtn">Clear all data</button>
+      </div>
+      <p class="backup-note" id="backupNote"></p>
+    </section>
+  </main>
+
+  <button type="button" class="fab" id="fabAdd" aria-label="Log a match">+</button>
+
+  <!-- Log / Edit form -->
+  <dialog id="matchDialog" class="match-dialog">
+    <form id="matchForm" method="dialog" novalidate>
+      <div class="dialog-head">
+        <h2 id="dialogTitle" class="dialog-title">Log a match</h2>
+        <button type="button" class="dialog-close" id="dialogClose" aria-label="Close">×</button>
+      </div>
+
+      <div class="form-grid">
+        <div class="field">
+          <label for="fDate">Date</label>
+          <input type="date" id="fDate" required />
+        </div>
+        <div class="field">
+          <span class="field-label">Result</span>
+          <div class="seg" role="radiogroup" aria-label="Result">
+            <label class="seg-opt win"><input type="radio" name="result" value="win" required /><span>Win</span></label>
+            <label class="seg-opt loss"><input type="radio" name="result" value="loss" /><span>Loss</span></label>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="fMyLeader">Your leader / deck</label>
+          <input type="text" id="fMyLeader" list="myLeaderList" required placeholder="e.g. Brook (G/B)" />
+          <datalist id="myLeaderList"></datalist>
+        </div>
+        <div class="field">
+          <label for="fOppLeader">Opponent leader / deck</label>
+          <input type="text" id="fOppLeader" list="oppLeaderList" required placeholder="e.g. Shanks (Red)" />
+          <datalist id="oppLeaderList"></datalist>
+        </div>
+
+        <div class="field">
+          <span class="field-label">Went</span>
+          <div class="seg" role="radiogroup" aria-label="Turn order">
+            <label class="seg-opt"><input type="radio" name="order" value="first" required /><span>First</span></label>
+            <label class="seg-opt"><input type="radio" name="order" value="second" /><span>Second</span></label>
+          </div>
+        </div>
+        <div class="field">
+          <span class="field-label">Mulligan</span>
+          <div class="seg" role="radiogroup" aria-label="Mulligan decision">
+            <label class="seg-opt"><input type="radio" name="mull" value="kept" required /><span>Kept</span></label>
+            <label class="seg-opt"><input type="radio" name="mull" value="mulliganed" /><span>Mulliganed</span></label>
+          </div>
+        </div>
+
+        <div class="field span2">
+          <label for="fHand">Opening hand <span class="mono" id="handValue">5</span>/10</label>
+          <input type="range" id="fHand" min="0" max="10" step="1" value="5" />
+        </div>
+
+        <div class="field">
+          <label for="fTurns">Turn count <span class="opt">optional</span></label>
+          <input type="number" id="fTurns" min="1" max="99" inputmode="numeric" />
+        </div>
+        <div class="field">
+          <label for="fTurningPoint">Turning point turn <span class="opt">optional</span></label>
+          <input type="number" id="fTurningPoint" min="1" max="99" inputmode="numeric" />
+        </div>
+
+        <div class="field">
+          <label for="fKeySeen">Key card seen?</label>
+          <select id="fKeySeen">
+            <option value="na">N/A</option>
+            <option value="yes">Yes</option>
+            <option value="no">No</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="fKeyName">Key card name <span class="opt">optional</span></label>
+          <input type="text" id="fKeyName" placeholder="e.g. Soul Solid" />
+        </div>
+
+        <div class="field span2">
+          <label for="fCause">Root cause — why did the game turn?</label>
+          <select id="fCause" required>
+            <option value="" disabled selected>Pick the honest answer…</option>
+          </select>
+        </div>
+
+        <div class="field span2">
+          <label for="fNote">One-line note <span class="opt">optional</span></label>
+          <input type="text" id="fNote" maxlength="140" placeholder="Worth remembering next time vs this deck…" />
+        </div>
+      </div>
+
+      <div class="dialog-actions">
+        <button type="button" class="btn ghost" id="cancelBtn">Cancel</button>
+        <button type="submit" class="btn primary" id="saveBtn">Save match</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="app.js"></script>
+</body>
+</html>
