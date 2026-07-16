@@ -1,7 +1,7 @@
 # Match Log
 
 Private TCG match tracker & loss review tool. A no-backend PWA: all data lives in your browser's local storage, per device, per person. Nothing is ever sent anywhere.
-
+<!-- 
 ## Deploy (GitHub Pages, ~5 minutes)
 
 1. Create a new repository on GitHub (e.g. `match-log`). Public is fine, the app contains no data, only code.
@@ -16,7 +16,7 @@ Private TCG match tracker & loss review tool. A no-backend PWA: all data lives i
    ```
 3. In the repo: **Settings > Pages > Source: Deploy from a branch > Branch: main / (root) > Save**.
 4. Wait a minute. Your app is live at `https://YOUR_USERNAME.github.io/match-log/`.
-
+-->
 ## Install on your phone
 
 - **Android (Chrome):** open the URL, menu (⋮) > "Add to Home screen" / "Install app".
