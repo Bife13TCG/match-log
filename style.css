@@ -543,22 +543,27 @@ html[data-theme="nightfall"] {
 
 /* Soul King — Brook's black & gold, green wins (that sleeve energy) */
 html[data-theme="soul-king"] {
-  --ink: #0c0b09;
-  --panel: #16140e;
-  --panel-edge: #2c2716;
-  --bone: #f0e9d4;
-  --slate: #9c9276;
+  --ink: #0a0d0a;
+  --panel: #121810;
+  --panel-edge: #263822;
+  --bone: #eef0d9;
+  --slate: #8fa382;
   --brass: #d4af37;
   --accent-grad: linear-gradient(135deg, #e6c352, #b8912a);
-  --on-accent: #16140e;
-  --win: #57a06f;
+  --on-accent: #121810;
+  --win: #62c88a;
   --loss: #b04455;
-  --draw: #8d8468;
-  --track: rgba(44, 39, 22, 0.7);
-  --row-line: rgba(44, 39, 22, 0.6);
-  --backdrop: rgba(5, 4, 2, 0.78);
-  --bg-fx: radial-gradient(ellipse 70% 40% at 50% -5%, rgba(212, 175, 55, 0.08), transparent);
+  --draw: #85937c;
+  --track: rgba(38, 56, 34, 0.65);
+  --row-line: rgba(38, 56, 34, 0.55);
+  --backdrop: rgba(3, 6, 3, 0.78);
+  --bg-fx: radial-gradient(ellipse 75% 45% at 50% -5%, rgba(70, 150, 90, 0.14), transparent);
 }
+/* Soul King: green structure, gold actions */
+html[data-theme="soul-king"] .btn.pill:hover,
+html[data-theme="soul-king"] .deck-card:hover,
+html[data-theme="soul-king"] .report-item:hover { border-color: #62c88a; }
+html[data-theme="soul-king"] .deck-card.new { border-color: #2f4a2a; }
 
 /* Thousand Sunny — warm light theme */
 html[data-theme="sunny"] {

@@ -1073,7 +1073,7 @@ function note(msg) {
 const THEMES = [
   { id: 'ships-log', name: "Ship's Log", sw: ['#10141f', '#1a2336', '#c9a227', '#5f9e85'] },
   { id: 'nightfall', name: 'Nightfall', sw: ['#0b0b12', '#14141d', '#8b5cf6', '#55c789'] },
-  { id: 'soul-king', name: 'Soul King', sw: ['#0c0b09', '#16140e', '#d4af37', '#57a06f'] },
+  { id: 'soul-king', name: 'Soul King', sw: ['#0a0d0a', '#263822', '#d4af37', '#62c88a'] },
   { id: 'sunny', name: 'Thousand Sunny', sw: ['#f4eddd', '#fdf8ec', '#c96f1e', '#2e8b57'] },
   { id: 'emperor', name: 'Emperor', sw: ['#120c0e', '#1d1317', '#d64545', '#5aa878'] }
 ];
