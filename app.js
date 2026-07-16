@@ -83,10 +83,30 @@ function esc(s) {
 /* ---------- Leader helpers ---------- */
 function leaderById(id) { return LEADERS.find((l) => l.id === id) || null; }
 
-function colorDots(colors, extra = '') {
-  return `<span class="color-dots ${extra}">` +
-    (colors || []).map((c) => `<span class="color-dot c-${c.toLowerCase()}" title="${esc(c)}"></span>`).join('') +
-    '</span>';
+const COLOR_HEX = {
+  red: '#c0392b', green: '#2e8b57', blue: '#2e6da4',
+  purple: '#7d4fa8', black: '#2b2b33', yellow: '#d4ac0d'
+};
+
+/* One circle per leader: solid if mono, split halves if multi-color */
+function leaderDot(colors, extra = '') {
+  const cs = (colors || []).map((c) => COLOR_HEX[c.toLowerCase()]).filter(Boolean);
+  if (!cs.length) return '';
+  let bg;
+  if (cs.length === 1) bg = cs[0];
+  else {
+    const step = 100 / cs.length;
+    bg = 'linear-gradient(90deg,' +
+      cs.map((c, i) => `${c} ${i * step}% ${(i + 1) * step}%`).join(',') + ')';
+  }
+  return `<span class="leader-dot ${extra}" style="background:${bg}" title="${esc((colors || []).join('/'))}"></span>`;
+}
+
+/* Colors for an opponent string like "Shanks (OP09-001)" via the card ID */
+function oppColors(oppStr, oppLeaderId) {
+  if (oppLeaderId) return leaderById(oppLeaderId)?.c || [];
+  const m = /\(([A-Za-z]+\d*-\d+[^)]*)\)\s*$/.exec(oppStr || '');
+  return m ? (leaderById(m[1])?.c || []) : [];
 }
 
 /* Searchable leader combobox. getValue/setValue work on {name, leaderId} */
@@ -112,7 +132,7 @@ function initCombo(comboEl, onPick) {
     list.innerHTML = items.length
       ? items.map((l, i) =>
           `<button type="button" class="combo-opt" data-i="${i}">
-             ${colorDots(l.c)}<span>${esc(l.n)}</span><span class="combo-id">${esc(l.id)}</span>
+             ${leaderDot(l.c)}<span>${esc(l.n)}</span><span class="combo-id">${esc(l.id)}</span>
            </button>`).join('')
       : '<div class="combo-empty">No leader found — free text is fine.</div>';
   }
@@ -293,7 +313,7 @@ function renderHome() {
   grid.innerHTML = db.decks.map((d) => {
     const t = tally(units.filter((u) => u.deckId === d.id));
     return `<button type="button" class="deck-card" data-deck="${d.id}">
-      ${colorDots(d.colors)}
+      ${leaderDot(d.colors, 'lg')}
       <span class="deck-card-name">${esc(d.leaderName)}</span>
       ${d.leaderId ? `<span class="deck-card-id mono">${esc(d.leaderId)}</span>` : ''}
       <span class="deck-card-rec mono">${t.n ? `${recStr(t)} · ${winPct(t.w, t.n)}` : 'No matches yet'}</span>
@@ -372,7 +392,7 @@ function renderStats() {
   $('deckStatsEmpty').hidden = deckStats.length > 0;
   dRows.innerHTML = deckStats.map(({ d, t }) => {
     const wr = Math.round((t.w / t.n) * 100);
-    return `<tr><td>${esc(d.leaderName)}</td><td class="num">${t.n}</td>
+    return `<tr><td>${leaderDot(d.colors)}${esc(d.leaderName)}</td><td class="num">${t.n}</td>
       <td class="num">${recStr(t)}</td>
       <td class="num ${wr >= 50 ? 'wr-good' : 'wr-bad'}">${wr}%</td></tr>`;
   }).join('');
@@ -390,7 +410,7 @@ function renderStats() {
   $('matchupEmpty').hidden = mu.length > 0;
   $('matchupRows').innerHTML = mu.map(({ opp, t }) => {
     const wr = Math.round((t.w / t.n) * 100);
-    return `<tr><td>${esc(opp)}</td><td class="num">${t.n}</td>
+    return `<tr><td>${leaderDot(oppColors(opp))}${esc(opp)}</td><td class="num">${t.n}</td>
       <td class="num">${recStr(t)}</td>
       <td class="num ${wr >= 50 ? 'wr-good' : 'wr-bad'}">${wr}%</td></tr>`;
   }).join('');
@@ -443,7 +463,7 @@ function renderDeck() {
   const units = allUnits().filter((u) => u.deckId === d.id);
   const t = tally(units);
 
-  $('deckColors').innerHTML = colorDots(d.colors).replace(/^<span[^>]*>|<\/span>$/g, '');
+  $('deckColors').innerHTML = leaderDot(d.colors, 'lg');
   $('deckName').textContent = d.leaderName + (d.leaderId ? ` (${d.leaderId})` : '');
   $('deckRecord').textContent = t.n ? `${recStr(t)} · ${winPct(t.w, t.n)} match win rate` : 'No matches logged yet';
 
@@ -467,7 +487,7 @@ function renderDeck() {
   $('deckMatchupEmpty').hidden = mu.length > 0;
   $('deckMatchupRows').innerHTML = mu.map(({ opp, t }) => {
     const wr = Math.round((t.w / t.n) * 100);
-    return `<tr><td>${esc(opp)}</td><td class="num">${t.n}</td>
+    return `<tr><td>${leaderDot(oppColors(opp))}${esc(opp)}</td><td class="num">${t.n}</td>
       <td class="num">${recStr(t)}</td>
       <td class="num ${wr >= 50 ? 'wr-good' : 'wr-bad'}">${wr}%</td></tr>`;
   }).join('');
@@ -499,7 +519,7 @@ function renderDeck() {
       <button type="button" class="match-summary">
         <span class="result-badge">${m.result === 'win' ? 'W' : 'L'}</span>
         <span class="match-main">
-          <span class="match-vs">vs ${esc(m.opp)}</span>
+          <span class="match-vs">${leaderDot(oppColors(m.opp, m.oppLeaderId))}vs ${esc(m.opp)}</span>
           ${m.note ? `<span class="match-note">${esc(m.note)}</span>` : ''}
         </span>
         <span class="match-date">${dateStr}</span>
