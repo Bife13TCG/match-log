@@ -52,6 +52,24 @@
       </div>
     </section>
 
+    <section class="summary-grid">
+      <div class="card">
+        <span class="card-label">Dice won</span>
+        <span class="card-value mono" id="sDice">–</span>
+        <span class="card-sub mono" id="sDiceSub"></span>
+      </div>
+      <div class="card">
+        <span class="card-label">Going 1st</span>
+        <span class="card-value mono" id="sFirst">–</span>
+        <span class="card-sub mono" id="sFirstSub"></span>
+      </div>
+      <div class="card">
+        <span class="card-label">Going 2nd</span>
+        <span class="card-value mono" id="sSecond">–</span>
+        <span class="card-sub mono" id="sSecondSub"></span>
+      </div>
+    </section>
+
     <section class="panel">
       <h2 class="panel-title">By deck</h2>
       <div class="table-wrap">
@@ -113,8 +131,50 @@
 
     <div class="deck-actions">
       <button type="button" class="btn primary" id="newReportBtn">+ Tournament report</button>
-      <button type="button" class="btn" id="newCasualBtn">+ Casual match</button>
+      <button type="button" class="btn" id="newCasualBtn">+ Match</button>
     </div>
+
+    <section class="summary-grid">
+      <div class="card">
+        <span class="card-label">Match win rate</span>
+        <span class="card-value mono" id="dMatch">–</span>
+        <span class="card-sub mono" id="dMatchSub"></span>
+      </div>
+      <div class="card">
+        <span class="card-label">Game win rate</span>
+        <span class="card-value mono" id="dGame">–</span>
+        <span class="card-sub mono" id="dGameSub"></span>
+      </div>
+      <div class="card">
+        <span class="card-label">Dice won</span>
+        <span class="card-value mono" id="dDice">–</span>
+        <span class="card-sub mono" id="dDiceSub"></span>
+      </div>
+    </section>
+
+    <section class="summary-grid two">
+      <div class="card">
+        <span class="card-label">Going 1st</span>
+        <span class="card-value mono" id="dFirst">–</span>
+        <span class="card-sub mono" id="dFirstSub"></span>
+      </div>
+      <div class="card">
+        <span class="card-label">Going 2nd</span>
+        <span class="card-value mono" id="dSecond">–</span>
+        <span class="card-sub mono" id="dSecondSub"></span>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2 class="panel-title">Matchups</h2>
+      <div class="table-wrap">
+        <table class="matchup-table">
+          <thead><tr><th>Opponent</th><th class="num">Matches</th><th class="num">W–L–D</th><th class="num">Win %</th></tr></thead>
+          <tbody id="deckMatchupRows"></tbody>
+        </table>
+      </div>
+      <p class="empty-hint" id="deckMatchupEmpty" hidden>Nothing logged yet.</p>
+    </section>
 
     <section class="panel">
       <h2 class="panel-title">Reports</h2>
@@ -123,9 +183,9 @@
     </section>
 
     <section class="panel">
-      <h2 class="panel-title">Casual matches</h2>
+      <h2 class="panel-title">Matches</h2>
       <ul id="casualList" class="match-list"></ul>
-      <p class="empty-hint" id="casualEmpty" hidden>No casual matches logged.</p>
+      <p class="empty-hint" id="casualEmpty" hidden>No matches logged.</p>
     </section>
 
     <section class="panel">
@@ -170,9 +230,16 @@
           <label>Placement</label>
           <input type="text" id="rPlacement" placeholder="e.g. 3rd" />
         </div>
-        <div class="field span2">
+        <div class="field">
           <label>Format</label>
           <input type="text" id="rFormat" placeholder="e.g. OP16" />
+        </div>
+        <div class="field">
+          <span class="field-label">Match type</span>
+          <div class="mini-seg" id="rBestOf">
+            <button type="button" data-v="1">Bo1</button>
+            <button type="button" data-v="3">Bo3</button>
+          </div>
         </div>
       </div>
     </section>

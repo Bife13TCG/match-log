@@ -101,10 +101,14 @@ function initCombo(comboEl, onPick) {
 
   function render() {
     const q = input.value.trim().toLowerCase();
-    items = !q ? LEADERS.slice(0, 40)
-      : LEADERS.filter((l) =>
-          l.n.toLowerCase().includes(q) || l.id.toLowerCase().includes(q)
-        ).slice(0, 40);
+    // Multi-token search: every word must match name OR id ("ace op16" works)
+    const tokens = q.split(/\s+/).filter(Boolean);
+    items = !tokens.length ? LEADERS.slice(0, 40)
+      : LEADERS.filter((l) => {
+          const name = l.n.toLowerCase();
+          const id = l.id.toLowerCase();
+          return tokens.every((t) => name.includes(t) || id.includes(t));
+        }).slice(0, 40);
     list.innerHTML = items.length
       ? items.map((l, i) =>
           `<button type="button" class="combo-opt" data-i="${i}">
@@ -171,13 +175,14 @@ function allUnits() {
   for (const m of db.matches) {
     units.push({
       kind: 'casual', deckId: m.deckId, date: m.date, createdAt: m.createdAt,
-      result: m.result, opp: m.opp, isBye: false,
+      result: m.result, opp: m.opp, isBye: false, dice: m.dice || null,
       games: [{ result: m.result === 'win' ? 'W' : 'L', order: m.order, cause: m.cause }]
     });
   }
   for (const r of db.reports) {
+    const bo = r.bestOf === 1 ? 1 : 3;
     for (const rd of r.rounds || []) {
-      const games = (rd.games || []).filter((g) => g && g.result);
+      const games = (rd.games || []).slice(0, bo).filter((g) => g && g.result);
       let result = null;
       if (rd.outcome === 'bye') result = 'win';
       else if (rd.outcome === 'id') result = 'draw';
@@ -190,6 +195,7 @@ function allUnits() {
       units.push({
         kind: 'round', deckId: r.deckId, date: r.date || todayISO(), createdAt: rd.createdAt || r.createdAt,
         result, opp: rd.opp || '', isBye: rd.outcome === 'bye',
+        dice: rd.outcome === 'play' || !rd.outcome ? rd.dice || null : null,
         games: rd.outcome === 'play' || !rd.outcome ? games.map((g) => ({
           result: g.result, order: g.order, cause: g.cause || null
         })) : []
@@ -197,6 +203,30 @@ function allUnits() {
     }
   }
   return units;
+}
+
+/* Dice + turn-order stats. Order win rates are game-level, draws excluded. */
+function tempoStats(units) {
+  const t = { diceW: 0, diceN: 0, fw: 0, fn: 0, sw: 0, sn: 0 };
+  for (const u of units) {
+    if (u.dice) { t.diceN++; if (u.dice === 'won') t.diceW++; }
+    for (const g of u.games) {
+      if (g.result === 'D') continue;
+      if (g.order === 'first') { t.fn++; if (g.result === 'W') t.fw++; }
+      else if (g.order === 'second') { t.sn++; if (g.result === 'W') t.sw++; }
+    }
+  }
+  return t;
+}
+
+function fillTempo(prefix, units) {
+  const t = tempoStats(units);
+  $(prefix + 'Dice').textContent = winPct(t.diceW, t.diceN);
+  $(prefix + 'DiceSub').textContent = t.diceN ? `${t.diceW}/${t.diceN} rolls` : 'no data';
+  $(prefix + 'First').textContent = winPct(t.fw, t.fn);
+  $(prefix + 'FirstSub').textContent = t.fn ? `${t.fw}–${t.fn - t.fw} games` : 'no data';
+  $(prefix + 'Second').textContent = winPct(t.sw, t.sn);
+  $(prefix + 'SecondSub').textContent = t.sn ? `${t.sw}–${t.sn - t.sw} games` : 'no data';
 }
 
 function sortedUnits(units) {
@@ -332,6 +362,8 @@ function renderStats() {
     $('sStreakSub').textContent = first === 'win' ? 'winning' : 'losing';
   }
 
+  fillTempo('s', units);
+
   // Per-deck table
   const dRows = $('deckStatsRows');
   const deckStats = db.decks.map((d) => ({ d, t: tally(units.filter((u) => u.deckId === d.id)) }))
@@ -415,6 +447,31 @@ function renderDeck() {
   $('deckName').textContent = d.leaderName + (d.leaderId ? ` (${d.leaderId})` : '');
   $('deckRecord').textContent = t.n ? `${recStr(t)} · ${winPct(t.w, t.n)} match win rate` : 'No matches logged yet';
 
+  // Per-deck summary + tempo
+  $('dMatch').textContent = winPct(t.w, t.n);
+  $('dMatchSub').textContent = t.n ? recStr(t) : 'no data';
+  $('dGame').textContent = winPct(t.gw, t.gn);
+  $('dGameSub').textContent = t.gn ? `${t.gw}–${t.gl}` + (t.gd ? `–${t.gd}` : '') : 'no data';
+  fillTempo('d', units);
+
+  // Per-deck matchups (byes excluded)
+  const byOpp = new Map();
+  for (const u of units) {
+    if (u.isBye) continue;
+    const key = (u.opp || '').trim() || '(unknown)';
+    if (!byOpp.has(key)) byOpp.set(key, []);
+    byOpp.get(key).push(u);
+  }
+  const mu = [...byOpp.entries()].map(([opp, us]) => ({ opp, t: tally(us) }))
+    .sort((a, b) => b.t.n - a.t.n);
+  $('deckMatchupEmpty').hidden = mu.length > 0;
+  $('deckMatchupRows').innerHTML = mu.map(({ opp, t }) => {
+    const wr = Math.round((t.w / t.n) * 100);
+    return `<tr><td>${esc(opp)}</td><td class="num">${t.n}</td>
+      <td class="num">${recStr(t)}</td>
+      <td class="num ${wr >= 50 ? 'wr-good' : 'wr-bad'}">${wr}%</td></tr>`;
+  }).join('');
+
   // Reports
   const reports = db.reports.filter((r) => r.deckId === d.id)
     .sort((a, b) => (b.date || '').localeCompare(a.date || '') || b.createdAt - a.createdAt);
@@ -469,9 +526,10 @@ function renderDeck() {
 }
 
 function reportRecord(r) {
+  const bo = r.bestOf === 1 ? 1 : 3;
   let w = 0, l = 0, dr = 0;
   for (const rd of r.rounds || []) {
-    const games = (rd.games || []).filter((g) => g && g.result);
+    const games = (rd.games || []).slice(0, bo).filter((g) => g && g.result);
     if (rd.outcome === 'bye') { w++; continue; }
     if (rd.outcome === 'id') { dr++; continue; }
     if (!games.length) continue;
@@ -487,7 +545,7 @@ $('deleteDeckBtn').addEventListener('click', () => {
   if (!d) return;
   const nRep = db.reports.filter((r) => r.deckId === d.id).length;
   const nMat = db.matches.filter((m) => m.deckId === d.id).length;
-  if (!confirm(`Delete "${d.leaderName}" and its ${nRep} report(s) + ${nMat} casual match(es)? This can't be undone.`)) return;
+  if (!confirm(`Delete "${d.leaderName}" and its ${nRep} report(s) + ${nMat} match(es)? This can't be undone.`)) return;
   db.decks = db.decks.filter((x) => x.id !== d.id);
   db.reports = db.reports.filter((r) => r.deckId !== d.id);
   db.matches = db.matches.filter((m) => m.deckId !== d.id);
@@ -603,6 +661,7 @@ $('newReportBtn').addEventListener('click', () => {
   const r = {
     id: uid(), deckId: currentDeckId, createdAt: Date.now(),
     eventName: '', date: todayISO(), players: null, placement: '', format: '',
+    bestOf: 3,
     rounds: [newRound()]
   };
   db.reports.push(r);
@@ -667,8 +726,26 @@ function renderReport() {
   $('rPlayers').value = r.players ?? '';
   $('rPlacement').value = r.placement || '';
   $('rFormat').value = r.format || '';
+  syncBestOf(r);
   renderRounds();
 }
+
+function syncBestOf(r) {
+  const bo = r.bestOf === 1 ? 1 : 3;
+  $('rBestOf').querySelectorAll('button').forEach((b) =>
+    b.classList.toggle('on', Number(b.dataset.v) === bo));
+}
+
+$('rBestOf').addEventListener('click', (e) => {
+  const b = e.target.closest('button');
+  if (!b) return;
+  const r = report();
+  if (!r) return;
+  r.bestOf = Number(b.dataset.v);
+  save();
+  syncBestOf(r);
+  renderRounds();
+});
 
 function renderRounds() {
   const r = report();
@@ -698,6 +775,8 @@ function roundCard(rd, idx) {
   const el = document.createElement('section');
   el.className = 'round-card';
   const isPlay = rd.outcome === 'play' || !rd.outcome;
+  const bo = report().bestOf === 1 ? 1 : 3;
+  const gameIdxs = bo === 1 ? [0] : [0, 1, 2];
 
   el.innerHTML = `
     <div class="round-head">
@@ -732,8 +811,8 @@ function roundCard(rd, idx) {
     </div>
 
     <div class="games-block" ${isPlay ? '' : 'style="display:none"'}>
-      <span class="field-label">Match games</span>
-      ${[0, 1, 2].map((gi) => gameRow(rd, gi)).join('')}
+      <span class="field-label">${bo === 1 ? 'Game' : 'Match games'}</span>
+      ${gameIdxs.map((gi) => gameRow(rd, gi)).join('')}
     </div>
 
     <div class="round-foot">
@@ -936,7 +1015,7 @@ $('exportBtn').addEventListener('click', () => {
   a.download = `matchlog-backup-${todayISO()}.json`;
   a.click();
   URL.revokeObjectURL(a.href);
-  note(`Exported ${db.decks.length} decks, ${db.reports.length} reports, ${db.matches.length} casual matches.`);
+  note(`Exported ${db.decks.length} decks, ${db.reports.length} reports, ${db.matches.length} matches.`);
 });
 
 $('importBtn').addEventListener('click', () => $('importFile').click());
@@ -977,7 +1056,7 @@ $('importFile').addEventListener('change', async (e) => {
 $('clearBtn').addEventListener('click', () => {
   const total = db.decks.length + db.reports.length + db.matches.length;
   if (!total) { note('Nothing to clear.'); return; }
-  if (!confirm(`This wipes everything on this device (${db.decks.length} decks, ${db.reports.length} reports, ${db.matches.length} casual matches).\n\nExport a backup first if you haven't. Continue?`)) return;
+  if (!confirm(`This wipes everything on this device (${db.decks.length} decks, ${db.reports.length} reports, ${db.matches.length} matches).\n\nExport a backup first if you haven't. Continue?`)) return;
   db = blankDb();
   save();
   route();

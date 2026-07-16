@@ -507,3 +507,5 @@ body {
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; }
 }
+
+.summary-grid.two { grid-template-columns: repeat(2, 1fr); }
