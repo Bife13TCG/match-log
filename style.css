@@ -543,27 +543,29 @@ html[data-theme="nightfall"] {
 
 /* Soul King — Brook's black & gold, green wins (that sleeve energy) */
 html[data-theme="soul-king"] {
-  --ink: #0a0d0a;
-  --panel: #121810;
-  --panel-edge: #263822;
-  --bone: #eef0d9;
-  --slate: #8fa382;
-  --brass: #d4af37;
-  --accent-grad: linear-gradient(135deg, #e6c352, #b8912a);
-  --on-accent: #121810;
-  --win: #62c88a;
-  --loss: #b04455;
-  --draw: #85937c;
-  --track: rgba(38, 56, 34, 0.65);
-  --row-line: rgba(38, 56, 34, 0.55);
-  --backdrop: rgba(3, 6, 3, 0.78);
-  --bg-fx: radial-gradient(ellipse 75% 45% at 50% -5%, rgba(70, 150, 90, 0.14), transparent);
+  --ink: #0b0a10;
+  --panel: #14121c;
+  --panel-edge: #2b2540;
+  --bone: #f4f0e4;
+  --slate: #9d95b5;
+  --brass: #d9b64a;
+  --accent-grad: linear-gradient(135deg, #eccc63, #bd9430);
+  --on-accent: #14121c;
+  --win: #5fb98a;
+  --loss: #d15268;
+  --draw: #8d86a3;
+  --track: rgba(43, 37, 64, 0.65);
+  --row-line: rgba(43, 37, 64, 0.55);
+  --backdrop: rgba(4, 3, 8, 0.8);
+  --bg-fx:
+    radial-gradient(ellipse 60% 35% at 30% -5%, rgba(150, 138, 230, 0.13), transparent),
+    radial-gradient(ellipse 50% 30% at 75% -8%, rgba(120, 170, 235, 0.08), transparent);
 }
-/* Soul King: green structure, gold actions */
+/* Soul King: bone & black, gold trim, soul-flame lavender haunting the edges */
 html[data-theme="soul-king"] .btn.pill:hover,
 html[data-theme="soul-king"] .deck-card:hover,
-html[data-theme="soul-king"] .report-item:hover { border-color: #62c88a; }
-html[data-theme="soul-king"] .deck-card.new { border-color: #2f4a2a; }
+html[data-theme="soul-king"] .report-item:hover { border-color: #a89ce0; }
+html[data-theme="soul-king"] .deck-card.new:hover { color: #cfc8ee; border-color: #a89ce0; }
 
 /* Thousand Sunny — warm light theme */
 html[data-theme="sunny"] {
